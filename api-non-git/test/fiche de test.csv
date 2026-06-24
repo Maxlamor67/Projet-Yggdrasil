@@ -1,0 +1,55 @@
+Type;Titre;Scénario;Attendu;Observé;Résultat;Commentaire
+E2E;Route racine;GET / retourne 200;200;;;Test basique de santé de l'API.
+E2E;Récupération IP serveur;GET /ip retourne l'IP du serveur.;200 + string (IP);;;Format exact dépend de l'implémentation (string/plain ou JSON).
+E2E;Liste types équipements sécurité;GET /safety-equipment-types retourne tous les types + longueurs.;200 + array[{id,name,model,lengths[]}];;;Doit inclure VEHICLE et OBSTACLE (seed-test).
+E2E;Liste des projets;GET /projects retourne un tableau de projets.;200 + array[Project];;;Doit contenir les projets seed "Test Project", "Test Project 2", "Test Project 3".
+E2E;Lecture projet par ID (seed);GET /projects/{id} sur "Test Project".;200 + Project{id,name,...};;;Utiliser l'ID récupéré via GET /projects (filtre name).
+E2E;Création projet valide;POST /projects avec name >= 5.;201 + Project{id,name,createdAt,updatedAt};;;Utiliser un name unique (timestamp).
+E2E;Création projet invalide (name trop court);POST /projects avec name='abc'.;400;;;Validation DTO minLength=5.
+E2E;Mise à jour projet;PUT /projects/{id} sur "Test Project 2" avec nouveau nom.;204 + persistance;;;Vérifier par GET /projects/{id} que name a changé.
+E2E;Suppression projet + vérification 404;DELETE /projects/{id} sur "Test Project 3".;204 puis GET => 404;;;Suppression et vérification que GET renvoie 404 (non 500).
+E2E;Liste points à sécuriser (seed);GET /projects/{projectId}/points-to-secure sur "Test Project".;200 + array[GetAllPointsToSecureResponse];;;Doit contenir 1 point seed (comment='Point à sécuriser (test)').
+E2E;Filtre points à sécuriser par bbox;GET /projects/{projectId}/points-to-secure?minLat=...&maxLat=...&minLng=...&maxLng=... incluant le seed.;200 + array non vide;;;Cas d'usage distinct : filtrage géographique.
+E2E;Lecture point à sécuriser par ID + photos;GET /projects/{projectId}/points-to-secure/{id} sur un point seed.;200 + GetPointToSecureResponse{point,safetyEquipmentType,photos[]};;;Si seed n'a pas de photos => photos=[] attendu.
+E2E;Récupération photo point à sécuriser;GET /projects/{projectId}/points-to-secure/{id}/photos/{photoId} sur photo seed.;200 + image bytes;;;Test de récupération de photo existante.
+E2E;Récupération photo inexistante;GET /projects/{projectId}/points-to-secure/{id}/photos/{photoId} avec photoId bidon.;404;;;Couvre la route même si pas de seed photo.
+E2E;Création point à sécuriser valide;POST /projects/{projectId}/points-to-secure avec {point:{lat,lng},isTreated:false,comment}.;201 + PointToSecure{id,projectId,pointId,isTreated,...};;;Option: ajouter safetyEquipmentTypeId (OBSTACLE) depuis /safety-equipment-types.
+E2E;Création point à sécuriser invalide (missing isTreated);POST /projects/{projectId}/points-to-secure sans isTreated.;400;;;Validation DTO: isTreated requis.
+E2E;Mise à jour point à sécuriser;PUT /projects/{projectId}/points-to-secure/{id} avec {isTreated:true, point:{lat,lng}}.;204 + persistance;;;Cas distinct: changement booléen + coordonnées.
+E2E;Suppression point à sécuriser + vérification 404;DELETE /projects/{projectId}/points-to-secure/{id} sur un point créé.;204 puis GET => 404;;;Suppression et vérification que GET renvoie 404 (non 500).
+E2E;Liste géométries (seed);GET /projects/{projectId}/geometries sur "Test Project".;200 + array[GetGeometryResponse];;;Doit contenir "Zone Test" (AREA) et "Parcours Test" (ROUTE).
+E2E;Lecture géométrie par ID;GET /projects/{projectId}/geometries/{id} sur "Zone Test".;200 + GetGeometryResponse{geometryPoints[],route?};;;AREA => route probablement null/absent, geometryPoints >= 2.
+E2E;Création géométrie AREA valide;POST /projects/{projectId}/geometries avec {type:'AREA',name:'...',points:[{lat,lng,rank} x4]}.;201 + Geometry{id,projectId,name,type};;;Utiliser 4 points rangés (rank 0..3) pour un carré simple.
+E2E;Création géométrie ROUTE valide;POST /projects/{projectId}/geometries avec type='ROUTE', points>=2 + route{startAt,slowerParticipantSpeedEstimate,fasterParticipantSpeedEstimate}.;201 + Geometry;;;Cas distinct: présence du bloc route.
+E2E;Création géométrie invalide (points < 2);POST /projects/{projectId}/geometries avec points:[{...}] (1 seul).;400;;;Validation DTO minItems=2.
+E2E;Mise à jour géométrie;PUT /projects/{projectId}/geometries/{id} sur une géométrie seed.;204 + persistance;;;Vérifier par GET que name/points ont changé.
+E2E;Suppression géométrie + vérification 404;DELETE /projects/{projectId}/geometries/{id} sur "Parcours Test".;204 puis GET => 404;;;Suppression et vérification que GET renvoie 404 (non 500).
+E2E;Liste des teams (seed);GET /projects/{projectId}/teams sur "Test Project".;200 + array[Team];;;Doit contenir "Team Alpha" et "Team Beta".
+E2E;Lecture team par ID;GET /projects/{projectId}/teams/{id} sur "Team Alpha".;200 + GetTeamResponse{users[]};;;Seed-test crée des users => users non vide.
+E2E;Création team valide;POST /projects/{projectId}/teams avec {name:'Team Test',members:[]}.;201 + Team{id,projectId,name};;;Création avec membres vides.
+E2E;Création team invalide (name trop court);POST /projects/{projectId}/teams avec name='abc'.;400;;;Validation DTO minLength=5.
+E2E;Mise à jour team;PUT /projects/{projectId}/teams/{id} avec {name:'Team Alpha Renamed',addMembers:[],removeMembers:[]}.;204 + persistance;;;Update DTO impose addMembers/removeMembers.
+E2E;Suppression team + vérification 404;DELETE /projects/{projectId}/teams/{id} sur "Team Beta".;204 puis GET => 404;;;Suppression et vérification que GET renvoie 404 (non 500).
+E2E;Récupération planning team;GET /projects/{projectId}/teams/{id}/planning sur "Team Alpha".;200 + array[ActionsAndSafetyEquipmentTypeLength];;;Doit refléter les safetyEquipment seed (VEHICLE + OBSTACLE) et leurs actions.
+E2E;Ajout membre à une team;POST /projects/{projectId}/teams/{teamId}/members avec {userId:'...'}.;201 + GetMemberResponse{id,name};;;Pré-requis: user existant; ajout user-b-test à Team Alpha.
+E2E;Suppression membre d'une team;DELETE /projects/{projectId}/teams/{teamId}/members/{id} sur user-a-test.;204;;;Suppression du membre de la team.
+E2E;Création transfert APP_TO_SOFTWARE;POST /projects/{projectId}/transfers avec {type:'APP_TO_SOFTWARE'}.;201 + CreateTransferResponse{ip,port,transferId};;;Tester 1ère valeur enum.
+E2E;Création transfert SOFTWARE_TO_APP;POST /projects/{projectId}/transfers avec {type:'SOFTWARE_TO_APP'}.;201 + CreateTransferResponse{ip,port,transferId};;;Tester 2ème valeur enum.
+E2E;Création transfert SOFTWARE_TO_APP_PLANNING;POST /projects/{projectId}/transfers avec {type:'SOFTWARE_TO_APP_PLANNING'}.;201 + CreateTransferResponse{ip,port,transferId};;;Tester 3ème valeur enum.
+E2E;Rejoindre transfert;GET /projects/{projectId}/transfers/{id} sur transferId créé.;200 + GetTransferResponse;;;Route accessible sans auth.
+E2E;Export planning transfert;POST /projects/{projectId}/transfers/{id}/export-planning/{teamId} sur "Team Alpha".;200 + GetTransferPlanningResponse;;;Export du planning d'une équipe via transfert.
+E2E;Liste équipements sécurité (seed);GET /projects/{projectId}/safety-equipment sur "Test Project".;200 + array[GetAllSafetyEquipmentsResponse];;;Doit contenir 2 équipements seed (1 VEHICLE, 1 OBSTACLE).
+E2E;Liste équipements sécurité (types VEHICLE et OBSTACLE);GET /projects/{projectId}/safety-equipment vérifie présence des 2 types.;200 + VEHICLE et OBSTACLE présents;;;Vérification des types d'équipements retournés.
+E2E;Lecture équipement sécurité par ID;GET /projects/{projectId}/safety-equipment/{id} sur un équipement seed.;200 + GetSafetyEquipmentResponse{actions[],points[],safetyEquipmentTypeLength};;;Vérifier actions contient SET+UNSET.
+E2E;Création équipement sécurité valide;POST /projects/{projectId}/safety-equipment avec {points,safetyEquipmentTypeLengthId,setAt,unsetAt,setTeamId,unsetTeamId}.;201 + SafetyEquipment{id,projectId,...};;;Récupérer safetyEquipmentTypeLengthId via GET /safety-equipment-types (lengths[].id).
+E2E;Mise à jour équipement sécurité;PUT /projects/{projectId}/safety-equipment/{id} sur un équipement seed.;204 + persistance;;;Vérifier via GET que points/dates/teams changent.
+E2E;Suppression équipement sécurité + vérification 404;DELETE /projects/{projectId}/safety-equipment/{id} sur un équipement créé.;204 puis GET => 404;;;Suppression et vérification que GET renvoie 404 (non 500).
+E2E;Mise à jour action équipement;PUT /projects/{projectId}/safety-equipment/{seId}/actions/{id} avec {teamId:'...'}.;204;;;Pré-requis: actionId depuis GET equipment + teamId existant (Team Beta).
+E2E;Liste points d'attention;GET /projects/{projectId}/attention-points sur "Test Project".;200 + array;;;Liste des points d'attention.
+E2E;Création point d'attention valide;POST /projects/{projectId}/attention-points avec {point:{lat,lng},description:'...'}.;201 + AttentionPoint{id,projectId,pointId,description};;;Créer puis vérifier par GET list qu'il apparaît.
+E2E;Création point d'attention invalide (missing description);POST /projects/{projectId}/attention-points sans description.;400;;;Validation DTO.
+E2E;Lecture point d'attention par ID;GET /projects/{projectId}/attention-points/{id} sur un point créé.;200 + GetAttentionPointResponse{point,description};;;Test de lecture après création.
+E2E;Suppression point d'attention;DELETE /projects/{projectId}/attention-points/{id} sur un point créé.;204;;;Vérifier persistence de la suppression.
+E2E;Recherche carte (search);GET /maps/search?q=Paris retourne résultats de recherche.;200 + array;;;Test du service de recherche de lieux.
+E2E;Tuile carte (z=16 x=33626 y=22947);GET /maps/tiles/16/33626/22947 retourne image.;200 + image/png (bytes);;;Test récupération tuile carte (tile 1).
+E2E;Tuile carte (z=16 x=33626 y=22948);GET /maps/tiles/16/33626/22948 retourne image.;200 + image/png (bytes);;;Test récupération tuile carte (tile 2).

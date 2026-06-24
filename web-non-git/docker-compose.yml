@@ -1,0 +1,14 @@
+# Architecture de l'application:
+# - Frontend (web): Port 3000 - React + TanStack Router + Vite
+
+services:
+  web:
+    build:
+      context: .
+      args:
+        - VITE_HTTP_API_URL=${VITE_HTTP_API_URL}
+    container_name: strassable
+    restart: always
+    ports:
+      - "127.0.0.1:3000:3000"
+    command: ["sh", "-c", "npm run deploy"]

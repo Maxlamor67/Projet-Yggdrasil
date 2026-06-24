@@ -1,0 +1,1 @@
+ALTER TABLE `SafetyEquipmentType` ADD `model` text NOT NULL;

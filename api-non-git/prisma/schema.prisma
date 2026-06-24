@@ -1,0 +1,314 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+generator prismaClassGenerator {
+  provider               = "prisma-class-generator"
+  dryRun                 = false
+  separateRelationFields = true
+  output                 = "../src/generated/prisma-class"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model Action {
+  id                String     @id @default(cuid(2))
+  safetyEquipmentId String
+  teamId            String?
+  type              ActionType
+  realizedAt        DateTime
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  safetyEquipment SafetyEquipment @relation(fields: [safetyEquipmentId], references: [id], onDelete: Cascade)
+  team            Team?           @relation(fields: [teamId], references: [id], onDelete: SetNull)
+
+  @@unique([safetyEquipmentId, type])
+}
+
+model AttentionPoint {
+  id          String   @id @default(cuid(2))
+  projectId   String
+  pointId     String   @unique
+  description String
+  createdAt   DateTime @default(now())
+
+  point   Point   @relation(fields: [pointId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Geometry {
+  id        String       @id @default(cuid(2))
+  projectId String
+  name      String
+  type      GeometryType
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  route          Route?
+  geometryPoints GeometryPoint[]
+}
+
+model GeometryPoint {
+  id         String   @id @default(cuid(2))
+  geometryId String
+  pointId    String   @unique
+  rank       Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  geometry Geometry @relation(fields: [geometryId], references: [id], onDelete: Cascade)
+  point    Point    @relation(fields: [pointId], references: [id], onDelete: Cascade)
+
+  @@unique([geometryId, rank])
+}
+
+model Photo {
+  id              String   @id @default(cuid(2))
+  pointToSecureId String
+  mimeType        String
+  data            Bytes
+  createdAt       DateTime @default(now())
+
+  pointToSecure PointToSecure @relation(fields: [pointToSecureId], references: [id], onDelete: Cascade)
+}
+
+model Point {
+  id        String    @id @default(cuid(2))
+  type      PointType
+  latitude  Float
+  longitude Float
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  geometryPoint        GeometryPoint?
+  safetyEquipmentPoint SafetyEquipmentPoint?
+  pointToSecure        PointToSecure?
+  attentionPoint       AttentionPoint?
+}
+
+model PointToSecure {
+  id                    String   @id @default(cuid(2))
+  projectId             String
+  pointId               String   @unique
+  safetyEquipmentTypeId String?
+  comment               String?
+  isTreated             Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  project             Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  photos              Photo[]
+  safetyEquipmentType SafetyEquipmentType? @relation(fields: [safetyEquipmentTypeId], references: [id])
+  point               Point                @relation(fields: [pointId], references: [id], onDelete: Cascade)
+}
+
+model Project {
+  id          String    @id @default(cuid(2))
+  name        String    @unique
+  startAtDate DateTime?
+  endAtDate   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  pointsToSecure   PointToSecure[]
+  geometries       Geometry[]
+  teams            Team[]
+  transfers        Transfer[]
+  safetyEquipments SafetyEquipment[]
+  attentionPoints  AttentionPoint[]
+}
+
+model Route {
+  id                             String   @id @default(cuid(2))
+  geometryId                     String   @unique
+  startAt                        DateTime
+  slowerParticipantSpeedEstimate Float
+  fasterParticipantSpeedEstimate Float
+  createdAt                      DateTime @default(now())
+  updatedAt                      DateTime @updatedAt
+
+  geometry Geometry @relation(fields: [geometryId], references: [id], onDelete: Cascade)
+}
+
+model SafetyEquipment {
+  id                             String   @id @default(cuid(2))
+  projectId                      String
+  safetyEquipmentTypeLengthId    String
+  safetyEquipmentTypeLengthCount Int
+  createdAt                      DateTime @default(now())
+  updatedAt                      DateTime @updatedAt
+
+  project                   Project                   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  safetyEquipmentTypeLength SafetyEquipmentTypeLength @relation(fields: [safetyEquipmentTypeLengthId], references: [id])
+  actions                   Action[]
+  safetyEquipmentPoints     SafetyEquipmentPoint[]
+}
+
+model SafetyEquipmentPoint {
+  id                String   @id @default(cuid(2))
+  safetyEquipmentId String
+  pointId           String   @unique
+  rank              Int
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  safetyEquipment SafetyEquipment @relation(fields: [safetyEquipmentId], references: [id], onDelete: Cascade)
+  point           Point           @relation(fields: [pointId], references: [id], onDelete: Cascade)
+
+  @@unique([safetyEquipmentId, rank])
+}
+
+model SafetyEquipmentType {
+  id        String                   @id @default(cuid(2))
+  name      String
+  model     SafetyEquipmentTypeModel
+  createdAt DateTime                 @default(now())
+
+  pointsToSecure PointToSecure[]
+  lengths        SafetyEquipmentTypeLength[]
+}
+
+model SafetyEquipmentTypeLength {
+  id                    String   @id @default(cuid(2))
+  safetyEquipmentTypeId String
+  length                Float
+  createdAt             DateTime @default(now())
+
+  safetyEquipmentType SafetyEquipmentType @relation(fields: [safetyEquipmentTypeId], references: [id])
+  safetyEquipments    SafetyEquipment[]
+
+  @@unique([safetyEquipmentTypeId, length])
+}
+
+model Session {
+  id             String   @id
+  expiresAt      DateTime
+  token          String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  ipAddress      String?
+  userAgent      String?
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  impersonatedBy String?
+
+  @@unique([token])
+  @@index([userId])
+}
+
+model Team {
+  id        String   @id @default(cuid(2))
+  projectId String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  actions Action[]
+  users   User[]
+}
+
+model Transfer {
+  id        String       @id @default(cuid(2))
+  projectId String
+  type      TransferType
+  createdAt DateTime     @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id
+  name          String
+  email         String
+  emailVerified Boolean   @default(false)
+  phone         String?
+  image         String?
+  role          UserRole  @default(user)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now()) @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  teams         Team[]
+  banned        Boolean?  @default(false)
+  banReason     String?
+  banExpires    DateTime?
+  isAnonymous   Boolean?
+
+  @@unique([email])
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  @@index([identifier])
+}
+
+enum ActionType {
+  SET
+  UNSET
+}
+
+enum GeometryType {
+  AREA
+  ROUTE
+}
+
+enum PointType {
+  GEOMETRY
+  SAFETY_EQUIPMENT
+  POINT_TO_SECURE
+  ATTENTION_POINT
+}
+
+enum SafetyEquipmentTypeModel {
+  VEHICLE
+  OBSTACLE
+}
+
+enum TransferType {
+  APP_TO_SOFTWARE
+  SOFTWARE_TO_APP
+  SOFTWARE_TO_APP_PLANNING
+}
+
+enum UserRole {
+  admin
+  user
+}

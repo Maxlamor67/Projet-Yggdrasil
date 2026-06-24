@@ -1,0 +1,55 @@
+# Dépendances
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Build
+dist
+.output
+dist-ssr
+build
+
+# Tests et coverage
+coverage
+reports
+*.lcov
+.nyc_output
+
+# Cache
+.vite
+.tanstack
+.cache
+*.tsbuildinfo
+
+# Logs
+logs
+*.log
+
+# Environment
+.env
+.env.local
+.env.test
+*.local
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Autres
+*.md
+.prettierrc
+.eslintrc
+.editorconfig
+count.txt
+.nitro
+.wrangler

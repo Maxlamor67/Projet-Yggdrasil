@@ -1,0 +1,37 @@
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.PointToSecureRelations = void 0;
+const project_1 = require("./project");
+const photo_1 = require("./photo");
+const safety_equipment_type_1 = require("./safety_equipment_type");
+const point_1 = require("./point");
+const swagger_1 = require("@nestjs/swagger");
+class PointToSecureRelations {
+}
+exports.PointToSecureRelations = PointToSecureRelations;
+__decorate([
+    (0, swagger_1.ApiProperty)({ type: () => project_1.Project }),
+    __metadata("design:type", project_1.Project)
+], PointToSecureRelations.prototype, "project", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ isArray: true, type: () => photo_1.Photo }),
+    __metadata("design:type", Array)
+], PointToSecureRelations.prototype, "photos", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ type: () => safety_equipment_type_1.SafetyEquipmentType }),
+    __metadata("design:type", safety_equipment_type_1.SafetyEquipmentType)
+], PointToSecureRelations.prototype, "safetyEquipmentType", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ type: () => point_1.Point }),
+    __metadata("design:type", point_1.Point)
+], PointToSecureRelations.prototype, "point", void 0);
+//# sourceMappingURL=point_to_secure_relations.js.map
